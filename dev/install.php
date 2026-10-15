@@ -8,8 +8,9 @@ if (is_file($root.'/data/dbconfig.php')) {
 }
 $password = getenv('SHOP_ADMIN_PASSWORD');
 if (!$password || (strlen($password) < 16 || strlen($password) > 20)) { fwrite(STDERR, "관리자 비밀번호는 로그인 폼에 맞춰 16~20자로 설정해야 합니다.\n"); exit(1); }
+$port = (int) (getenv('SHOP_PORT') ?: 8080);
 $_SERVER = array_merge($_SERVER, array(
-    'SERVER_PORT' => '8080', 'SERVER_NAME' => 'localhost', 'HTTP_HOST' => 'localhost:8080',
+    'SERVER_PORT' => (string) $port, 'SERVER_NAME' => 'localhost', 'HTTP_HOST' => 'localhost:'.$port,
     'REMOTE_ADDR' => '127.0.0.1', 'REQUEST_URI' => '/install/install_db.php',
     'SCRIPT_NAME' => '/install/install_db.php', 'SCRIPT_FILENAME' => $root.'/install/install_db.php',
     'DOCUMENT_ROOT' => $root, 'REQUEST_METHOD' => 'POST'

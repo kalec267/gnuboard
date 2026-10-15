@@ -5,7 +5,7 @@ import json
 import os
 import re
 import sys
-BASE = 'http://127.0.0.1:8080'
+BASE = os.environ.get('YOURDAY_BASE_URL', 'http://127.0.0.1:8080').rstrip('/')
 with sync_playwright() as pw:
     browser = pw.chromium.launch(executable_path=os.environ.get('CHROMIUM_PATH', '/usr/bin/chromium'), headless=True, args=['--no-sandbox'])
     page = browser.new_page(viewport={'width':1440,'height':1000})
@@ -13,6 +13,7 @@ with sync_playwright() as pw:
     page.on('pageerror', lambda e: errors.append(str(e)))
     response = page.goto(BASE, wait_until='networkidle')
     assert response.status == 200
+    assert page.evaluate('g5_url') == BASE, '그누보드 내부 URL 포트 불일치'
     assert page.locator('.yd-product').count() == 8
     assert page.locator('.yd-product-image img').evaluate_all('(images) => images.every(i => i.complete && i.naturalWidth > 0)')
     page.screenshot(path='/tmp/yourday-desktop.png', full_page=True)

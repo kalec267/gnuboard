@@ -16,7 +16,7 @@ if errorlevel 1 (
 )
 py -3 --version >nul 2>&1
 if not errorlevel 1 (
-    py -3 dev\setup.py
+    py -3 dev\setup.py --open
     goto result
 )
 python --version >nul 2>&1
@@ -25,13 +25,12 @@ if errorlevel 1 (
     pause
     exit /b 1
 )
-python dev\setup.py
+python dev\setup.py --open
 :result
 if errorlevel 1 (
     echo 실행에 실패했습니다. 위 오류 내용을 확인해 주세요.
     pause
     exit /b 1
 )
-echo 브라우저를 엽니다. 관리자 ID는 admin이고 비밀번호는 .env에 있습니다.
-start "" "http://localhost:8080"
+echo 실행을 완료했습니다. 접속 주소는 위 완료 메시지를 확인하세요.
 pause

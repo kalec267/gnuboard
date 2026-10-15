@@ -8,4 +8,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends libpng-dev libj
  && sed -i 's/:80>/:8080>/' /etc/apache2/sites-available/000-default.conf
 COPY dev/apache.conf /etc/apache2/conf-enabled/yourday.conf
 COPY dev/php.ini /usr/local/etc/php/conf.d/yourday.ini
+COPY --chmod=755 dev/start-web.sh /usr/local/bin/yourday-start
 WORKDIR /var/www/html
+ENTRYPOINT ["/usr/local/bin/yourday-start"]
+CMD ["apache2-foreground"]

@@ -19,8 +19,11 @@ python3 dev/setup.py
 
 ```bash
 python3 dev/setup.py --start  # 준비된 이미지로 다시 시작
+python3 dev/setup.py --port 18080 --open  # Windows 포트 제한 우회 및 브라우저 열기
 docker compose stop         # 서비스 중지 (DB 보존)
 ```
+
+포트를 변경하면 `.env`의 `SHOP_PORT`에 저장되고 서버·내부 링크·다음 실행에도 적용됩니다. 기존 비밀번호와 DB는 유지합니다.
 
 - 메인: `/`
 - 상품: `/shop/search.php`, `/shop/list.php?ca_id=10`
@@ -58,9 +61,10 @@ docker compose stop         # 서비스 중지 (DB 보존)
 python3 dev/tests/browser.py
 python3 dev/tests/browser.py --place-order  # 실제 결제 없이 자동검증용 샘플 주문 저장
 python3 dev/tests/http_smoke.py
+python3 -m unittest discover -s dev/tests -p "test_local_port.py"
 ```
 
-홈·카테고리 필터·검색·상품 이미지·사이즈·장바구니·주문서·모바일 레이아웃을 실제 PHP/MariaDB에서 확인합니다. 테스트용 주문을 생성하는 경우 명확히 표시하며 실제 PG를 호출하지 않습니다. 브라우저 검사에는 `/usr/bin/chromium`이 필요하고 `CHROMIUM_PATH`로 경로를 변경할 수 있습니다. 결과 화면은 `/tmp/yourday-*.png`에 저장합니다.
+홈·카테고리 필터·검색·상품 이미지·사이즈·장바구니·주문서·모바일 레이아웃을 실제 PHP/MariaDB에서 확인합니다. 다른 포트에서 검사하려면 `YOURDAY_BASE_URL`을 해당 주소로 설정하세요. 테스트용 주문을 생성하는 경우 명확히 표시하며 실제 PG를 호출하지 않습니다. 브라우저 검사에는 `/usr/bin/chromium`이 필요하고 `CHROMIUM_PATH`로 경로를 변경할 수 있습니다. 결과 화면은 `/tmp/yourday-*.png`에 저장합니다.
 
 ## 실제 판매 전 필요한 설정
 
