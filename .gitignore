@@ -1,0 +1,9 @@
+/.env
+/data/
+/.htaccess
+/.vscode/
+/.idea/
+/.playwright-mcp/
+/node_modules/
+*.log
+__pycache__/
