@@ -17,6 +17,26 @@ os.environ.setdefault('BUILDX_CONFIG', str(Path(tempfile.gettempdir()) / 'yourda
 def compose(*args, **kwargs):
     return subprocess.run(['docker', 'compose', *args], check=True, **kwargs)
 
+
+def database(operation, **kwargs):
+    return compose('exec', '-T', 'db', 'sh', '/usr/local/bin/yourday-db', operation, **kwargs)
+
+
+def database_error_message(error):
+    detail = (error.stderr or '').strip()
+    if isinstance(detail, bytes):
+        detail = detail.decode('utf-8', errors='replace')
+    message = 'DB 상태 확인에 실패했습니다.\n' + (detail or 'Docker의 DB 명령 실행에 실패했습니다.')
+    if 'Access denied' in detail or '1045' in detail or '1044' in detail:
+        message += (
+            '\n기존 DB 볼륨과 현재 .env의 계정·비밀번호가 일치하는지 확인하세요.\n'
+            '프로젝트 폴더를 옮겼다면 이전 폴더에서 실행하거나, 이전 .env와 data를 함께 복원하세요.\n'
+            '컨테이너의 환경변수를 바꿔도 기존 MariaDB 계정 비밀번호는 변경되지 않습니다.\n'
+            'DB 볼륨을 삭제하거나 .env를 재생성하지 마세요.'
+        )
+    return message
+
+
 def port_argument(value):
     try:
         return parse_port(value)
@@ -29,6 +49,7 @@ def main():
     parser.add_argument('--start', action='store_true', help='기존 이미지로 시작')
     parser.add_argument('--port', type=port_argument, help='로컬 포트 변경 및 .env에 저장 (예: 18080)')
     parser.add_argument('--open', action='store_true', help='준비 완료 후 PC 브라우저 열기')
+    parser.add_argument('--check-db', action='store_true', help='DB 연결과 설치 상태만 확인하고 종료')
     args = parser.parse_args()
 
     subprocess.run([sys.executable, 'dev/configure.py'], check=True)
@@ -47,18 +68,21 @@ def main():
         ) from None
     # DB는 컨테이너 볼륨, 업로드·설정은 data/에 보관한다.
     # 클라우드 스냅샷에서 Docker 볼륨이 복원되지 않았다면 로컬 백업을 사용한다.
-    probe = subprocess.run(['docker','compose','exec','-T','db','sh','-c',
-        'MYSQL_PWD="$MARIADB_PASSWORD" mariadb -u"$MARIADB_USER" "$MARIADB_DATABASE" -N -e "SHOW TABLES LIKE \'g5_config\'"'],
-        check=True, capture_output=True, text=True)
+    try:
+        probe = database('probe', capture_output=True, text=True, encoding='utf-8', errors='replace')
+    except subprocess.CalledProcessError as error:
+        raise SystemExit(database_error_message(error)) from None
     installed = bool(probe.stdout.strip())
+    if args.check_db:
+        print('DB 연결 정상. 그누보드 설치 상태: ' + ('설치됨' if installed else '미설치'))
+        return
     config = ROOT / 'data/dbconfig.php'
     backup = ROOT / 'data/development-backup.sql'
     if config.exists() and not installed:
         if not backup.exists():
             raise SystemExit('DB 볼륨이 비어 있습니다. data/development-backup.sql 또는 별도 DB 백업을 복원하세요. 기존 설정은 보존했습니다.')
         with backup.open('rb') as stream:
-            compose('exec','-T','db','sh','-c',
-                    'MYSQL_PWD="$MARIADB_PASSWORD" exec mariadb -u"$MARIADB_USER" "$MARIADB_DATABASE"', stdin=stream)
+            database('restore', stdin=stream)
         print('개발용 DB 백업을 복원했습니다.')
     elif installed and not config.exists():
         raise SystemExit('DB는 이미 설치되어 있지만 data/dbconfig.php가 없습니다. 기존 설정 파일을 복원하세요. 재설치하지 않았습니다.')
@@ -73,8 +97,7 @@ def main():
     fd = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
     try:
         with os.fdopen(fd, 'wb') as stream:
-            compose('exec','-T','db','sh','-c',
-                    'MYSQL_PWD="$MARIADB_PASSWORD" exec mariadb-dump --lock-tables -u"$MARIADB_USER" "$MARIADB_DATABASE"', stdout=stream)
+            database('backup', stdout=stream)
         temporary.replace(backup)
     finally:
         temporary.unlink(missing_ok=True)

@@ -20,6 +20,7 @@ python3 dev/setup.py
 ```bash
 python3 dev/setup.py --start  # 준비된 이미지로 다시 시작
 python3 dev/setup.py --port 18080 --open  # Windows 포트 제한 우회 및 브라우저 열기
+python3 dev/setup.py --start --check-db  # 앱 계정의 DB 연결과 설치 상태만 검사
 docker compose stop         # 서비스 중지 (DB 보존)
 ```
 
@@ -50,6 +51,8 @@ docker compose stop         # 서비스 중지 (DB 보존)
 - `dev/`: Docker 환경, CLI 전용 설치·샘플 초기화·기능 검사
 - `data/`: DB 연결 설정·업로드·세션·개발용 DB 백업 (Git 제외)
 - Docker `database` 볼륨: MariaDB 데이터. `docker compose down -v`는 DB를 삭제하므로 사용하지 마세요.
+
+`dev/database.sh`는 DB 컨테이너 안에서 상태 확인·백업·복원을 실행해 Windows 명령행의 중첩 인용부호 문제를 피합니다. DB 연결 오류는 실제 오류와 함께 표시하며 인증 실패 시 기존 `.env`와 볼륨의 일치 여부를 안내합니다.
 
 `dev/setup.py`는 정상 시작 후 `data/development-backup.sql`을 갱신합니다. 클라우드 재시작에서 볼륨이 누락되면 이 백업으로 복원합니다. 운영 백업 정책을 대신하지 않습니다. `.env`, `data/`와 DB 볼륨은 함께 보존하세요. DB가 남아 있는데 연결 설정이 없거나, 연결 설정은 있지만 복원할 DB가 없으면 재설치하지 않고 중단합니다.
 
