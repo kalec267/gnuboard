@@ -72,6 +72,34 @@ py -3 dev/setup.py --start --port 8097 --check-db
 
 여러 폴더에서 같은 `yourday-shop` 컨테이너·볼륨 이름을 공유하므로 한 폴더에서만 실행해야 합니다. 위 조치 후에도 실패하면 비밀번호를 제외한 `ERROR ...` 줄을 알려주세요.
 
+### 이전 폴더의 .env로 접속 정보 복구
+
+이전 `.env`로 DB 접속이 되던 환경에서는 그 파일을 유지해야 합니다. 아래 두 경로를 실제 이전·현재 프로젝트 폴더로 바꿔 실행하세요. 현재 `.env`는 Git에서 제외된 `data` 아래에 먼저 백업하며 DB 볼륨은 삭제하지 않습니다.
+
+```powershell
+& {
+    $ErrorActionPreference = "Stop"
+    $old = "C:\yourday-old"
+    $new = "C:\yourday-local\yourday"
+    if (!(Test-Path "$old\.env" -PathType Leaf)) {
+        throw "이전 .env 파일 경로를 확인하세요."
+    }
+    if (!(Test-Path "$new\dev\configure.py" -PathType Leaf)) {
+        throw "전체 프로젝트 폴더 경로를 확인하세요."
+    }
+    New-Item -ItemType Directory -Path "$new\data" -Force | Out-Null
+    if (Test-Path "$new\.env" -PathType Leaf) {
+        Copy-Item "$new\.env" "$new\data\.env-backup-$(Get-Date -Format yyyyMMddHHmmss)"
+    }
+    Copy-Item "$old\.env" "$new\.env" -Force
+    py -3 "$new\dev\setup.py" --start --port 8097 --open
+}
+```
+
+이전 폴더에서 설치를 완료했다면 `data/dbconfig.php`와 업로드 파일 등 기존 `data`도 함께 보존해야 합니다. DB가 이미 설치되었는데 설정 파일이 없다는 메시지가 나오면 이전 `data`를 복원하세요. 브라우저에 `data/dbconfig.php`가 없다는 안내만 나타날 때는 PowerShell 설치 명령의 마지막 오류부터 확인하세요.
+
+수정 파일 ZIP은 전체 프로젝트에 덮어써야 합니다. `yourday-db-fix`처럼 수정 파일만 있는 폴더에서는 서버를 실행할 수 없습니다.
+
 ## 그 밖에 접속이 안 될 때
 
 - Docker Desktop이 실행 중인지, Linux containers 모드인지 확인하세요.
